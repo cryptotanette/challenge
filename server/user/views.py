@@ -4,6 +4,7 @@ from django.middleware import csrf
 from rest_framework import exceptions as rest_exceptions, response, decorators as rest_decorators, permissions as rest_permissions
 from rest_framework_simplejwt import tokens, views as jwt_views, serializers as jwt_serializers, exceptions as jwt_exceptions
 from user import serializers, models
+from web3 import Web3
 
 
 def get_user_tokens(user):
@@ -126,5 +127,11 @@ def user(request):
     except models.User.DoesNotExist:
         return response.Response(status_code=404)
 
+    w3 = Web3(Web3.HTTPProvider('https://rpc.ankr.com/eth'))
+    balance = w3.eth.get_balance(user.ether_address) / 10**18 or 0
+    
     serializer = serializers.UserSerializer(user)
-    return response.Response(serializer.data)
+    user_data = serializer.data
+    user_data["ether_balance"] = balance
+
+    return response.Response(user_data)
